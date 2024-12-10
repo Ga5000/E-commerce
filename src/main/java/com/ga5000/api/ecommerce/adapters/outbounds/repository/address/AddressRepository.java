@@ -1,4 +1,4 @@
-package com.ga5000.api.ecommerce.adapters.outbounds.repository;
+package com.ga5000.api.ecommerce.adapters.outbounds.repository.address;
 
 import com.ga5000.api.ecommerce.domain.address.Address;
 import org.springframework.data.jpa.repository.JpaRepository;

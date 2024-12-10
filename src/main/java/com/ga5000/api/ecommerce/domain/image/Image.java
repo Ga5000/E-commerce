@@ -12,16 +12,16 @@ public class Image{
     private UUID imageId;
 
     @Column
-    private byte[] image;
+    private String imageUrl;
 
     @OneToOne(mappedBy = "image", cascade = CascadeType.ALL)
     private Product product;
 
     public Image() {}
 
-    public Image(UUID imageId, byte[] image, Product product) {
+    public Image(UUID imageId, String imageUrl, Product product) {
         this.imageId = imageId;
-        this.image = image;
+        this.imageUrl = imageUrl;
         this.product = product;
     }
 
@@ -33,12 +33,12 @@ public class Image{
         this.imageId = imageId;
     }
 
-    public byte[] getImage() {
-        return image;
+    public String getImageUrl() {
+        return imageUrl;
     }
 
-    public void setImage(byte[] image) {
-        this.image = image;
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Product getProduct() {

@@ -1,4 +1,4 @@
-package com.ga5000.api.ecommerce.adapters.outbounds.repository;
+package com.ga5000.api.ecommerce.adapters.outbounds.repository.payment;
 
 import com.ga5000.api.ecommerce.domain.baseEntity.payment.Payment;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -16,12 +16,16 @@ public class Product {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID productId;
 
+    @Column(unique = true, nullable = false)
     private String productName;
 
+    @Column(nullable = false)
     private String productDescription;
 
+    @Column(nullable = false)
     private double productPrice;
 
+    @Column(nullable = false)
     private int remainingProductQuantity;
 
     @OneToOne
@@ -39,11 +43,13 @@ public class Product {
     @OneToMany(mappedBy = "product")
     private List<Category> categories;
 
+    private boolean available;
+
     public Product() {
     }
 
     public Product(UUID productId, String productName, String productDescription, double productPrice,
-                   int remainingProductQuantity, Image productImage, Cart cart, Order order) {
+                   int remainingProductQuantity, Image productImage, Cart cart, Order order, boolean available) {
         this.productId = productId;
         this.productName = productName;
         this.productDescription = productDescription;
@@ -52,6 +58,7 @@ public class Product {
         this.productImage = productImage;
         this.cart = cart;
         this.order = order;
+        this.available = available;
     }
 
     public UUID getProductId() {
@@ -124,5 +131,13 @@ public class Product {
 
     public void setOrder(Order order) {
         this.order = order;
+    }
+
+    public boolean isAvailable() {
+        return available;
+    }
+
+    public void setAvailable(boolean available) {
+        this.available = remainingProductQuantity != 0;
     }
 }
