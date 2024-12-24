@@ -8,20 +8,26 @@ import java.util.*;
 
 @Entity
 public class Cart {
-    @Id @GeneratedValue(strategy = GenerationType.UUID)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
     private UUID cartId;
 
     @OneToOne(mappedBy = "cart", cascade = CascadeType.ALL)
     private User user;
 
     @ElementCollection
-    List<ProductItem> items = new ArrayList<>();
+    private List<ProductItem> items = new ArrayList<>();
 
     @Column(nullable = false)
-    private double totalPrice = calculateTotalPrice(items); //auto-updated
+    private double totalPrice;
 
     @Column(nullable = false)
     private boolean isCheckedOut = false;
+
+    public Cart() {
+        this.totalPrice = calculateTotalPrice();
+    }
 
     public UUID getCartId() {
         return cartId;
@@ -45,14 +51,11 @@ public class Cart {
 
     public void setItems(List<ProductItem> items) {
         this.items = items;
+        this.totalPrice = calculateTotalPrice();
     }
 
     public double getTotalPrice() {
         return totalPrice;
-    }
-
-    public void setTotalPrice(double totalPrice) {
-        this.totalPrice = totalPrice;
     }
 
     public boolean isCheckedOut() {
@@ -63,23 +66,26 @@ public class Cart {
         isCheckedOut = checkedOut;
     }
 
-    private double calculateTotalPrice(List<ProductItem> items){
-        for (ProductItem item : items){
-            totalPrice += item.getPrice() * item.getQuantity();
-        }
-        return totalPrice;
-    }
-
-    public void addItem(ProductItem item){
+    public void addItem(ProductItem item) {
         items.add(item);
+        this.totalPrice = calculateTotalPrice();
     }
 
-    public void removeItem(int index){
-        items.remove(index);
+    public void removeItem(int index) {
+        if (index >= 0 && index < items.size()) {
+            items.remove(index);
+            this.totalPrice = calculateTotalPrice();
+        }
     }
 
-    public void clear(){
+    public void clear() {
         items.clear();
+        this.totalPrice = 0.0;
     }
 
+    private double calculateTotalPrice() {
+        return items.stream()
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .sum();
+    }
 }

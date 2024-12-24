@@ -18,57 +18,59 @@ public class Order {
     private UUID orderId;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "userId")
+    @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
     private User user;
 
     @ElementCollection
     @CollectionTable(name = "order_details", joinColumns = @JoinColumn(name = "order_id"))
     @MapKeyColumn(name = "product_name")
-    @Column(name = "quantity")
-    private Map<String, Integer> details = new HashMap<>(); // (product name, quantity of said product)
+    @Column(name = "quantity", nullable = false)
+    private Map<String, Integer> details = new HashMap<>(); // (product name, quantity)
 
     @Column(nullable = false)
-    private double total; // Auto-generated (based on the total price of the cart)
+    private double total; // Auto-calculated based on cart total price.
 
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
     private OrderStatus orderStatus;
 
     @Column(nullable = false)
-    private LocalDateTime orderDate = LocalDateTime.now(); //auto-generated
+    private LocalDateTime orderDate; // Auto-generated
 
     @OneToOne
-    @JoinColumn(name = "payment_id", referencedColumnName = "paymentId")
+    @JoinColumn(name = "payment_id", referencedColumnName = "paymentId", nullable = false)
     private Payment payment;
 
     @OneToOne
-    @JoinColumn(name = "address_id", referencedColumnName = "addressId")
-    private Address shippingAddress; // selected by the user
+    @JoinColumn(name = "address_id", referencedColumnName = "addressId", nullable = false)
+    private Address shippingAddress;
 
     public Order() {
+        this.orderDate = LocalDateTime.now();
     }
 
-    public Order(UUID orderId, User user, Map<String, Integer> details, double total, OrderStatus orderStatus,
-                 LocalDateTime orderDate, Payment payment, Address shippingAddress) {
-        this.orderId = orderId;
+    public Order(User user, Cart cart, OrderStatus orderStatus, Payment payment, Address shippingAddress) {
+        this();
         this.user = user;
-        this.details = details;
-        this.total = total;
         this.orderStatus = orderStatus;
-        this.orderDate = orderDate;
         this.payment = payment;
         this.shippingAddress = shippingAddress;
+        setDetails(cart);
+        setTotal(cart);
+
     }
 
-    private void setTotal(User user) {
-        Cart cart = user.getCart();
-        this.total = cart.getTotalPrice();
+    private void setTotal(Cart cart) {
+        if (cart != null) {
+            this.total = cart.getTotalPrice();
+        }
     }
 
-    private void setDetails(User user) {
-        Cart cart = user.getCart();
-        for (ProductItem productItem : cart.getItems()) {
-            this.details.put(productItem.getName(), productItem.getQuantity());
+    private void setDetails(Cart cart) {
+        if (cart != null) {
+            for (ProductItem productItem : cart.getItems()) {
+                this.details.put(productItem.getName(), productItem.getQuantity());
+            }
         }
     }
 
@@ -89,19 +91,11 @@ public class Order {
     }
 
     public Map<String, Integer> getDetails() {
-        return details;
-    }
-
-    public void setDetails(Map<String, Integer> details) {
-        this.details = details;
+        return Collections.unmodifiableMap(details);
     }
 
     public double getTotal() {
         return total;
-    }
-
-    public void setTotal(double total) {
-        this.total = total;
     }
 
     public OrderStatus getOrderStatus() {
@@ -120,4 +114,15 @@ public class Order {
         this.payment = payment;
     }
 
+    public Address getShippingAddress() {
+        return shippingAddress;
+    }
+
+    public void setShippingAddress(Address shippingAddress) {
+        this.shippingAddress = shippingAddress;
+    }
+
+    public LocalDateTime getOrderDate() {
+        return orderDate;
+    }
 }

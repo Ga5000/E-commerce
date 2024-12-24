@@ -14,7 +14,7 @@ public class Category {
 
     @Column(nullable = false)
     @NotBlank(message = "O nome da categoria não pode estar vazio")
-    private String categoryName = ""; // default = blank
+    private String categoryName;
 
     @ManyToOne
     @JoinColumn(name = "product_id", referencedColumnName = "productId")
@@ -28,6 +28,9 @@ public class Category {
 
     public Category() {
 
+    }
+
+    public Category(String categoryName) {
     }
 
     public UUID getCategoryId() {

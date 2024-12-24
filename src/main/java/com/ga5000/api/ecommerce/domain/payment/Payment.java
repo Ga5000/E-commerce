@@ -1,6 +1,5 @@
 package com.ga5000.api.ecommerce.domain.payment;
 
-import ch.qos.logback.core.status.Status;
 import com.ga5000.api.ecommerce.domain.order.Order;
 import com.ga5000.api.ecommerce.domain.payment.utils.PaymentStatus;
 import com.ga5000.api.ecommerce.domain.payment.utils.PaymentType;
@@ -12,6 +11,7 @@ import java.util.UUID;
 
 @Entity
 public class Payment {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID paymentId;
@@ -27,30 +27,36 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
-    @Column(nullable = false)
-    private LocalDateTime paymentDate = LocalDateTime.now(); //auto-generated
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime paymentDate;
 
-    @OneToOne(mappedBy = "payment")
+    @OneToOne(mappedBy = "payment", cascade = CascadeType.ALL, orphanRemoval = true)
     private Order order;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "userId")
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
     private User user;
 
-    public Payment(UUID paymentId, PaymentType paymentType, double amount, PaymentStatus status,
-                   LocalDateTime paymentDate, Order order, User user) {
+    public Payment() {
+        this.paymentDate = LocalDateTime.now();
+    }
+
+    public Payment(PaymentType paymentType, double amount, PaymentStatus status, User user) {
+        this();
+        this.paymentType = paymentType;
+        this.amount = amount;
+        this.status = status;
+        this.user = user;
+    }
+
+    public Payment(UUID paymentId, PaymentType paymentType, double amount, PaymentStatus status, LocalDateTime paymentDate, Order order, User user) {
         this.paymentId = paymentId;
         this.paymentType = paymentType;
         this.amount = amount;
         this.status = status;
-        this.paymentDate = paymentDate;
+        this.paymentDate = paymentDate != null ? paymentDate : LocalDateTime.now();
         this.order = order;
         this.user = user;
-    }
-
-    public Payment() {}
-
-    public Payment(PaymentType paymentType, double amount, Status status) {
     }
 
     public UUID getPaymentId() {
@@ -74,6 +80,9 @@ public class Payment {
     }
 
     public void setAmount(double amount) {
+        if (amount <= 0) {
+            throw new IllegalArgumentException("Amount must be greater than zero.");
+        }
         this.amount = amount;
     }
 
@@ -83,6 +92,10 @@ public class Payment {
 
     public void setStatus(PaymentStatus status) {
         this.status = status;
+    }
+
+    public LocalDateTime getPaymentDate() {
+        return paymentDate;
     }
 
     public Order getOrder() {
@@ -98,6 +111,23 @@ public class Payment {
     }
 
     public void setUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("User cannot be null.");
+        }
         this.user = user;
     }
+
+
+    public boolean isSuccessful() {
+        return PaymentStatus.APPROVED.equals(this.status);
+    }
+
+    public boolean isPending() {
+        return PaymentStatus.PENDING.equals(this.status);
+    }
+
+    public boolean isFailed() {
+        return PaymentStatus.REJECTED.equals(this.status);
+    }
+
 }

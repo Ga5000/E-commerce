@@ -1,42 +1,46 @@
 package com.ga5000.api.ecommerce.domain.user;
 
 import com.ga5000.api.ecommerce.domain.cart.Cart;
+import com.ga5000.api.ecommerce.domain.comment.Comment;
 import com.ga5000.api.ecommerce.domain.order.Order;
 import com.ga5000.api.ecommerce.domain.payment.Payment;
 import com.ga5000.api.ecommerce.domain.address.Address;
+import com.ga5000.api.ecommerce.domain.user.utils.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Entity
-public class User {
+public class User implements UserDetails {
+
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID userId;
 
     @Column(nullable = false)
     @NotBlank(message = "O primeiro nome não pode estar em branco")
-    private String firstName = ""; // default = blank
+    private String firstName = "";
 
     @Column(nullable = false)
     @NotBlank(message = "O sobrenome não pode estar em branco")
-    private String lastName = ""; // default = blank
+    private String lastName = "";
 
     @Column(nullable = false, unique = true)
     @Email(message = "O e-mail deve ser válido")
-    private String email = ""; // default = blank
+    private String email = "";
 
     @Column(nullable = false)
     @NotBlank(message = "A senha não pode estar em branco")
-    private String password = ""; // default = blank
+    private String password = "";
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now(); //auto-generated
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
@@ -47,23 +51,30 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "address_id")
     )
-    private List<Address> addresses;
+    private List<Address> addresses = new ArrayList<>();
 
     @OneToOne(cascade = CascadeType.PERSIST)
     @JoinColumn(name = "cart_id", referencedColumnName = "cartId")
-    private Cart cart = new Cart(); // auto-generated
+    private Cart cart = new Cart();
 
     @OneToMany(mappedBy = "user")
-    private List<Order> orders;
+    private List<Order> orders = new ArrayList<>();
 
     @OneToMany(mappedBy = "user")
-    private List<Payment> payments = new ArrayList<>(); // empty at first
+    private List<Payment> payments = new ArrayList<>();
+
+    @OneToMany(mappedBy = "user")
+    private List<Comment> comments = new ArrayList<>();
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     public User() {
     }
 
     public User(UUID userId, String firstName, String lastName, String email, String password, LocalDateTime createdAt,
-                LocalDateTime updatedAt, List<Address> addresses, Cart cart, List<Order> orders, List<Payment> payments) {
+                LocalDateTime updatedAt, List<Address> addresses, Cart cart, List<Order> orders,
+                List<Payment> payments, List<Comment> comments, Role role) {
         this.userId = userId;
         this.firstName = firstName;
         this.lastName = lastName;
@@ -75,8 +86,11 @@ public class User {
         this.cart = cart;
         this.orders = orders;
         this.payments = payments;
+        this.comments = comments;
+        this.role = role;
     }
 
+    // Getters and Setters
     public UUID getUserId() {
         return userId;
     }
@@ -107,10 +121,6 @@ public class User {
 
     public void setEmail(String email) {
         this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
     }
 
     public void setPassword(String password) {
@@ -163,5 +173,56 @@ public class User {
 
     public void setPayments(List<Payment> payments) {
         this.payments = payments;
+    }
+
+    public List<Comment> getComments() {
+        return comments;
+    }
+
+    public void setComments(List<Comment> comments) {
+        this.comments = comments;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return Collections.singleton(new SimpleGrantedAuthority(role.getRole()));
+    }
+
+    @Override
+    public String getPassword() {
+        return this.password;
+    }
+
+    @Override
+    public String getUsername() {
+        return this.email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }
