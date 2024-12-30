@@ -48,4 +48,17 @@ public class Message {
         BucketMessage(String s) {
         }
     }
+
+    public enum CartMessage{
+        CART_NOT_FOUND("Carrinho não encontrado");
+        CartMessage(String s){
+        }
+    }
+
+    public enum AddressMessage{
+        ADDRESS_NOT_FOUND("Endereço não encontrado"),
+        ADDRESS_EXISTS("Este endereço já existe");
+        AddressMessage(String s){
+        }
+    }
 }

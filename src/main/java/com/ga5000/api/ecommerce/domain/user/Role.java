@@ -1,4 +1,4 @@
-package com.ga5000.api.ecommerce.domain.user.utils;
+package com.ga5000.api.ecommerce.domain.user;
 
 public enum Role {
     USER("ROLE_USER"),

@@ -1,7 +1,7 @@
 package com.ga5000.api.ecommerce.service.comment;
 
-import com.ga5000.api.ecommerce.dto.CommentRequestDto;
-import com.ga5000.api.ecommerce.dto.CommentResponseDto;
+import com.ga5000.api.ecommerce.dto.comment.CommentRequestDto;
+import com.ga5000.api.ecommerce.dto.comment.CommentResponseDto;
 import jakarta.persistence.EntityNotFoundException;
 
 import java.util.List;

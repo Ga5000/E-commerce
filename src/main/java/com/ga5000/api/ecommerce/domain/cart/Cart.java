@@ -49,11 +49,6 @@ public class Cart {
         return items;
     }
 
-    public void setItems(List<ProductItem> items) {
-        this.items = items;
-        this.totalPrice = calculateTotalPrice();
-    }
-
     public double getTotalPrice() {
         return totalPrice;
     }

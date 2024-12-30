@@ -1,6 +1,6 @@
 package com.ga5000.api.ecommerce.service.category;
 
-import com.ga5000.api.ecommerce.dto.CategoryResponseDto;
+import com.ga5000.api.ecommerce.dto.category.CategoryResponseDto;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 

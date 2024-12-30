@@ -3,6 +3,8 @@ package com.ga5000.api.ecommerce.aws.s3bucket;
 import com.ga5000.api.ecommerce.exception.InvalidFileException;
 import com.ga5000.api.ecommerce.utils.exceptions.Message;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -20,6 +22,7 @@ import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequ
 import java.io.IOException;
 import java.net.URL;
 import java.time.Duration;
+
 
 public class Bucket {
 

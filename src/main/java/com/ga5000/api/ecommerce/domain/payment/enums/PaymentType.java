@@ -1,4 +1,4 @@
-package com.ga5000.api.ecommerce.domain.payment.utils;
+package com.ga5000.api.ecommerce.domain.payment.enums;
 
 public enum PaymentType {
     CARD("CARTÃO"),

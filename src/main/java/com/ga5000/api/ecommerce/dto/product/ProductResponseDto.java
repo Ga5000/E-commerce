@@ -1,5 +1,6 @@
-package com.ga5000.api.ecommerce.dto;
+package com.ga5000.api.ecommerce.dto.product;
 
+import com.ga5000.api.ecommerce.dto.category.CategoryResponseDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;

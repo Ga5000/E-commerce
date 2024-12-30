@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
+@Table(name = "products")
 public class Product {
 
     @Id

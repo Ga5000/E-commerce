@@ -1,8 +1,8 @@
 package com.ga5000.api.ecommerce.domain.payment;
 
 import com.ga5000.api.ecommerce.domain.order.Order;
-import com.ga5000.api.ecommerce.domain.payment.utils.PaymentStatus;
-import com.ga5000.api.ecommerce.domain.payment.utils.PaymentType;
+import com.ga5000.api.ecommerce.domain.payment.enums.PaymentStatus;
+import com.ga5000.api.ecommerce.domain.payment.enums.PaymentType;
 import com.ga5000.api.ecommerce.domain.user.User;
 import jakarta.persistence.*;
 
@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
+@Table(name = "payments")
 public class Payment {
 
     @Id

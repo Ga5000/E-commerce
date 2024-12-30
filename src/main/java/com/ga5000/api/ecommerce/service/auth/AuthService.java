@@ -7,8 +7,9 @@ import com.ga5000.api.ecommerce.utils.exceptions.Message;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
 
-
+@Service
 public class AuthService implements IAuthService {
     private final UserRepository userRepository;
 
@@ -23,11 +24,11 @@ public class AuthService implements IAuthService {
             String email = ((UserDetails) principal).getUsername();
             return validadeAndReturnUser(email);
         }
-        throw new NoAuthenticatedUserFoundException(Message.AuthMessage.NO_AUTHENTICATED_USER_FOUND_MESSAGE.name());
+        throw new NoAuthenticatedUserFoundException(Message.AuthMessage.NO_AUTHENTICATED_USER_FOUND.name());
     }
 
     private User validadeAndReturnUser(String email) throws EntityNotFoundException {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException(Message.UserMessage.USER_NOT_FOUND_MESSAGE.name()));
+                .orElseThrow(() -> new EntityNotFoundException(Message.UserMessage.USER_NOT_FOUND.name()));
     }
 }

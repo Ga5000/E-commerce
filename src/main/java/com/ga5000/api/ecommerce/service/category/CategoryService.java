@@ -1,17 +1,19 @@
 package com.ga5000.api.ecommerce.service.category;
 
 import com.ga5000.api.ecommerce.domain.category.Category;
-import com.ga5000.api.ecommerce.dto.CategoryResponseDto;
+import com.ga5000.api.ecommerce.dto.category.CategoryResponseDto;
 import com.ga5000.api.ecommerce.repository.category.CategoryRepository;
 import com.ga5000.api.ecommerce.utils.exceptions.Message;
 import com.ga5000.api.ecommerce.utils.mapper.Mapper;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class CategoryService implements ICategoryService {
     private final CategoryRepository categoryRepository;
 

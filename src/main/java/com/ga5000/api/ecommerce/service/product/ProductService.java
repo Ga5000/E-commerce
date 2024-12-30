@@ -3,15 +3,23 @@ package com.ga5000.api.ecommerce.service.product;
 import com.ga5000.api.ecommerce.aws.s3bucket.Bucket;
 import com.ga5000.api.ecommerce.domain.category.Category;
 import com.ga5000.api.ecommerce.domain.product.Product;
-import com.ga5000.api.ecommerce.dto.ProductRequestDto;
-import com.ga5000.api.ecommerce.dto.ProductResponseDto;
+import com.ga5000.api.ecommerce.dto.product.ProductRequestDto;
+import com.ga5000.api.ecommerce.dto.product.ProductResponseDto;
+import com.ga5000.api.ecommerce.dto.product.ProductSearchFilterDto;
 import com.ga5000.api.ecommerce.repository.category.CategoryRepository;
 import com.ga5000.api.ecommerce.repository.product.ProductRepository;
+import com.ga5000.api.ecommerce.repository.product.ProductSpecification;
 import com.ga5000.api.ecommerce.utils.exceptions.Message;
+import com.ga5000.api.ecommerce.utils.mapper.Mapper;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
@@ -20,15 +28,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class ProductService implements IProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
-    private final Bucket awsBucket;
+    private Bucket awsBucket;
 
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, Bucket awsBucket) {
+    private static final Integer PAGE_SIZE = 40;
+
+    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
         this.productRepository = productRepository;
         this.categoryRepository = categoryRepository;
-        this.awsBucket = awsBucket;
     }
 
     @Override
@@ -84,8 +94,13 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    public Page<ProductResponseDto> getProducts() {
-        return null;
+    public Page<ProductResponseDto> getProducts(int page, ProductSearchFilterDto filter, Sort.Direction sortDirection) {
+        Sort sort = Sort.by(sortDirection,"name","price"); //direction --> ASC or "DESC
+        Pageable pageable = PageRequest.of(page, PAGE_SIZE, sort);
+        Specification<Product> productSpecification = ProductSpecification.fromFilter(filter);
+        Page<Product> productsPage = productRepository.findAll(productSpecification, pageable);
+
+        return productsPage.map(Mapper::toProductResponseDto);
     }
 
     private void addCategoriesToProduct(Product product, List<UUID> categoriesIds) throws EntityNotFoundException {

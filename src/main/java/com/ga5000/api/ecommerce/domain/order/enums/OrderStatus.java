@@ -1,4 +1,4 @@
-package com.ga5000.api.ecommerce.domain.order.utils;
+package com.ga5000.api.ecommerce.domain.order.enums;
 
 public enum OrderStatus {
     SHIPPED("ENVIADO"),

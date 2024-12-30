@@ -1,7 +1,7 @@
 package com.ga5000.api.ecommerce.utils;
 
 import com.ga5000.api.ecommerce.domain.user.User;
-import com.ga5000.api.ecommerce.domain.user.utils.Role;
+import com.ga5000.api.ecommerce.domain.user.Role;
 
 public class AuthUtil {
     public static boolean IsAdmin(User user) {

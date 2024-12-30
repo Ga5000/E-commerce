@@ -5,10 +5,10 @@ import com.ga5000.api.ecommerce.domain.user.User;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 
-import java.util.List;
 import java.util.UUID;
 
 @Entity
+@Table(name = "addresses")
 public class Address {
 
     @Id
@@ -44,8 +44,9 @@ public class Address {
     @Transient
     private String formattedAddress;
 
-    @ManyToMany(mappedBy = "addresses")
-    private List<User> users;
+    @ManyToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "userId")
+    private User user;
 
     @OneToOne(mappedBy = "shippingAddress")
     private Order order;
@@ -138,6 +139,8 @@ public class Address {
         updateFormattedAddress();
     }
 
+
+
     public String getCountry() {
         return country;
     }
@@ -151,19 +154,19 @@ public class Address {
         return formattedAddress;
     }
 
-    public List<User> getUsers() {
-        return users;
-    }
-
-    public void setUsers(List<User> users) {
-        this.users = users;
-    }
-
     public Order getOrder() {
         return order;
     }
 
     public void setOrder(Order order) {
         this.order = order;
+    }
+
+    public User getUser() {
+        return user;
+    }
+
+    public void setUser(User user) {
+        this.user = user;
     }
 }

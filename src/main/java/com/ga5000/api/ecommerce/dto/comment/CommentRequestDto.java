@@ -1,4 +1,4 @@
-package com.ga5000.api.ecommerce.dto;
+package com.ga5000.api.ecommerce.dto.comment;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;

@@ -1,9 +1,8 @@
 package com.ga5000.api.ecommerce.domain.order;
 
 import com.ga5000.api.ecommerce.domain.cart.Cart;
-import com.ga5000.api.ecommerce.domain.order.utils.OrderStatus;
+import com.ga5000.api.ecommerce.domain.order.enums.OrderStatus;
 import com.ga5000.api.ecommerce.domain.payment.Payment;
-import com.ga5000.api.ecommerce.domain.product.productItem.ProductItem;
 import com.ga5000.api.ecommerce.domain.user.User;
 import com.ga5000.api.ecommerce.domain.address.Address;
 import jakarta.persistence.*;
@@ -12,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
+@Table(name = "orders")
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
@@ -20,12 +20,6 @@ public class Order {
     @ManyToOne
     @JoinColumn(name = "user_id", referencedColumnName = "userId", nullable = false)
     private User user;
-
-    @ElementCollection
-    @CollectionTable(name = "order_details", joinColumns = @JoinColumn(name = "order_id"))
-    @MapKeyColumn(name = "product_name")
-    @Column(name = "quantity", nullable = false)
-    private Map<String, Integer> details = new HashMap<>(); // (product name, quantity)
 
     @Column(nullable = false)
     private double total; // Auto-calculated based on cart total price.
@@ -55,7 +49,6 @@ public class Order {
         this.orderStatus = orderStatus;
         this.payment = payment;
         this.shippingAddress = shippingAddress;
-        setDetails(cart);
         setTotal(cart);
 
     }
@@ -63,14 +56,6 @@ public class Order {
     private void setTotal(Cart cart) {
         if (cart != null) {
             this.total = cart.getTotalPrice();
-        }
-    }
-
-    private void setDetails(Cart cart) {
-        if (cart != null) {
-            for (ProductItem productItem : cart.getItems()) {
-                this.details.put(productItem.getName(), productItem.getQuantity());
-            }
         }
     }
 
@@ -88,10 +73,6 @@ public class Order {
 
     public void setUser(User user) {
         this.user = user;
-    }
-
-    public Map<String, Integer> getDetails() {
-        return Collections.unmodifiableMap(details);
     }
 
     public double getTotal() {

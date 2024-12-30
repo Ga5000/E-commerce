@@ -5,7 +5,6 @@ import com.ga5000.api.ecommerce.domain.comment.Comment;
 import com.ga5000.api.ecommerce.domain.order.Order;
 import com.ga5000.api.ecommerce.domain.payment.Payment;
 import com.ga5000.api.ecommerce.domain.address.Address;
-import com.ga5000.api.ecommerce.domain.user.utils.Role;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -17,6 +16,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
+@Table(name = "users")
 public class User implements UserDetails {
 
     @Id
@@ -45,12 +45,7 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    @ManyToMany
-    @JoinTable(
-            name = "user_addresses",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "address_id")
-    )
+    @OneToMany(mappedBy = "user")
     private List<Address> addresses = new ArrayList<>();
 
     @OneToOne(cascade = CascadeType.PERSIST)

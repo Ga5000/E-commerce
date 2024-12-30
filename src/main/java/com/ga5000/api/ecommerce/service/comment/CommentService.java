@@ -3,8 +3,8 @@ package com.ga5000.api.ecommerce.service.comment;
 import com.ga5000.api.ecommerce.domain.comment.Comment;
 import com.ga5000.api.ecommerce.domain.product.Product;
 import com.ga5000.api.ecommerce.domain.user.User;
-import com.ga5000.api.ecommerce.dto.CommentRequestDto;
-import com.ga5000.api.ecommerce.dto.CommentResponseDto;
+import com.ga5000.api.ecommerce.dto.comment.CommentRequestDto;
+import com.ga5000.api.ecommerce.dto.comment.CommentResponseDto;
 import com.ga5000.api.ecommerce.exception.UnauthorizedException;
 import com.ga5000.api.ecommerce.repository.comment.CommentRepository;
 import com.ga5000.api.ecommerce.repository.product.ProductRepository;
@@ -16,10 +16,12 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
 
+@Service
 public class CommentService implements ICommentService {
     private final CommentRepository commentRepository;
     private final ProductRepository productRepository;
