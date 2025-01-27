@@ -1,83 +1,94 @@
 package com.ga5000.api.ecommerce.service.address;
 
 import com.ga5000.api.ecommerce.domain.address.Address;
-import com.ga5000.api.ecommerce.dto.address.AddressResponseDto;
+import com.ga5000.api.ecommerce.domain.user.client.Client;
 import com.ga5000.api.ecommerce.dto.address.AddressRequestDto;
-import com.ga5000.api.ecommerce.exception.UnauthorizedException;
+import com.ga5000.api.ecommerce.dto.address.AddressResponseDto;
 import com.ga5000.api.ecommerce.repository.address.AddressRepository;
-import com.ga5000.api.ecommerce.service.auth.AuthService;
-import com.ga5000.api.ecommerce.utils.exceptions.Message;
-import com.ga5000.api.ecommerce.utils.mapper.Mapper;
+import com.ga5000.api.ecommerce.repository.user.UserRepository;
+import com.ga5000.api.ecommerce.utils.Mapper;
 import jakarta.persistence.EntityExistsException;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.BeanUtils;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
+import static com.ga5000.api.ecommerce.utils.AuthUtil.getCurrentClient;
+import static com.ga5000.api.ecommerce.utils.ExceptionMessage.ADDRESS_EXISTS;
+import static com.ga5000.api.ecommerce.utils.ExceptionMessage.ADDRESS_NOT_FOUND;
+import static com.ga5000.api.ecommerce.utils.Mapper.toAddressResponse;
+import static com.ga5000.api.ecommerce.utils.RepositoryUtil.getById;
+import static com.ga5000.api.ecommerce.utils.RequestUtil.mapRequest;
+import static com.ga5000.api.ecommerce.utils.ValidationUtil.*;
+
 @Service
 public class AddressService implements IAddressService {
     private final AddressRepository addressRepository;
-    private final AuthService authService;
+    private final UserRepository userRepository;
 
-    public AddressService(AddressRepository addressRepository, AuthService authService) {
+    public AddressService(AddressRepository addressRepository, UserRepository userRepository) {
         this.addressRepository = addressRepository;
-        this.authService = authService;
-    }
-
-
-    @Override
-    public void addAddress(AddressRequestDto addressRequestDto) throws EntityExistsException {
-        var address = new Address();
-        BeanUtils.copyProperties(addressRequestDto, address);
-        address.setUser(authService.getCurrentUser());
-
-
-        checkIfEqualExists(address);
-        addressRepository.save(address);
+        this.userRepository = userRepository;
     }
 
     @Override
-    public void updateAddress(UUID addressId, AddressRequestDto addressRequestDto) {
-        Address address = getById(addressId);
-        compareIds(addressId);
-        BeanUtils.copyProperties(addressRequestDto, address);
+    @Transactional
+    public void createAddress(AddressRequestDto request) throws EntityExistsException {
+        var newAddress = new Address();
+        checkEntityAvailability(request.postalCode(), addressRepository,
+                addressRepository::findByPostalCode, ADDRESS_EXISTS);
 
-        checkIfEqualExists(address);
-        addressRepository.save(address);
+        Client client = getCurrentClient(userRepository);
+        mapRequest(request, newAddress);
+        newAddress.setClient(client);
+
+        saveAddress(newAddress);
     }
 
     @Override
+    @Transactional
+    public void updateAddress(UUID addressId, AddressRequestDto request) throws EntityExistsException {
+        Address existingAddress = getById(addressId, addressRepository, "Address not found");
+
+        if (!isSameValue(existingAddress.getPostalCode(), request.postalCode())) {
+            checkEntityAvailability(request.postalCode(), addressRepository,
+                    addressRepository::findByPostalCode, ADDRESS_EXISTS);
+        }
+
+        Client client = getCurrentClient(userRepository);
+        validateOwnership(client, existingAddress, Address::getClient);
+
+        mapRequest(request, existingAddress);
+        saveAddress(existingAddress);
+    }
+
+    @Override
+    @Transactional
     public void deleteAddress(UUID addressId) {
-        Address address = getById(addressId);
-        compareIds(addressId);
-        addressRepository.delete(address);
+        Address existingAddress = getById(addressId, addressRepository, ADDRESS_NOT_FOUND);
+        Client client = getCurrentClient(userRepository);
+        validateOwnership(client, existingAddress, Address::getClient);
+        addressRepository.delete(existingAddress);
     }
 
     @Override
-    public List<AddressResponseDto> getUserAddresses() {
-        return authService.getCurrentUser()
-                .getAddresses().stream().map(Mapper::toAddressResponseDto)
+    public List<AddressResponseDto> getAddresses() {
+        return addressRepository.findAll(Sort.by(Sort.Order.asc("postalCode")))
+                .stream()
+                .map(Mapper::toAddressResponse)
                 .toList();
     }
 
-    private Address getById(UUID addressId) throws EntityNotFoundException {
-        return addressRepository.findById(addressId)
-                .orElseThrow(() -> new EntityNotFoundException(Message.AddressMessage.ADDRESS_NOT_FOUND.name()));
+    @Override
+    public AddressResponseDto getAddress(UUID addressId) {
+        return toAddressResponse(getById(addressId, addressRepository, ADDRESS_NOT_FOUND));
     }
 
-    private void compareIds(UUID addressId) throws UnauthorizedException {
-        if(!authService.getCurrentUser().getAddresses().contains(getById(addressId))) {
-            throw new UnauthorizedException(Message.AuthMessage.UNAUTHORIZED.name());
-        }
+    private void saveAddress(Address address) {
+        addressRepository.save(address);
     }
 
-    private void checkIfEqualExists(Address address) throws EntityExistsException {
-        if(authService.getCurrentUser().getAddresses().contains(address)) {
-            throw new EntityExistsException(Message.AddressMessage.ADDRESS_EXISTS.name());
-        }
-    }
+
 }

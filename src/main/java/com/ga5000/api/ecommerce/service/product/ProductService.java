@@ -1,119 +1,106 @@
 package com.ga5000.api.ecommerce.service.product;
 
-import com.ga5000.api.ecommerce.aws.s3bucket.Bucket;
-import com.ga5000.api.ecommerce.domain.category.Category;
 import com.ga5000.api.ecommerce.domain.product.Product;
+import com.ga5000.api.ecommerce.domain.product.ProductSearchDto;
+import com.ga5000.api.ecommerce.domain.product.image.Image;
+import com.ga5000.api.ecommerce.dto.page.PageRequestDto;
 import com.ga5000.api.ecommerce.dto.product.ProductRequestDto;
 import com.ga5000.api.ecommerce.dto.product.ProductResponseDto;
-import com.ga5000.api.ecommerce.dto.product.ProductSearchFilterDto;
-import com.ga5000.api.ecommerce.repository.category.CategoryRepository;
+import com.ga5000.api.ecommerce.dto.product.SearchParams;
 import com.ga5000.api.ecommerce.repository.product.ProductRepository;
-import com.ga5000.api.ecommerce.repository.product.ProductSpecification;
-import com.ga5000.api.ecommerce.utils.exceptions.Message;
-import com.ga5000.api.ecommerce.utils.mapper.Mapper;
-import jakarta.persistence.EntityExistsException;
-import jakarta.persistence.EntityNotFoundException;
-import org.springframework.beans.BeanUtils;
+import com.ga5000.api.ecommerce.service.category.CategoryService;
+import com.ga5000.api.ecommerce.service.image.IImageService;
+import com.ga5000.api.ecommerce.utils.Mapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.services.s3.model.S3Exception;
 
-import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-@Service
+import static com.ga5000.api.ecommerce.utils.ExceptionMessage.PRODUCT_EXISTS;
+import static com.ga5000.api.ecommerce.utils.ExceptionMessage.PRODUCT_NOT_FOUND;
+import static com.ga5000.api.ecommerce.utils.RepositoryUtil.getById;
+import static com.ga5000.api.ecommerce.utils.RequestUtil.mapRequest;
+import static com.ga5000.api.ecommerce.utils.ValidationUtil.checkEntityAvailability;
+import static com.ga5000.api.ecommerce.utils.ValidationUtil.isSameValue;
+
 public class ProductService implements IProductService {
     private final ProductRepository productRepository;
-    private final CategoryRepository categoryRepository;
-    private Bucket awsBucket;
+    private final IImageService imageService;
+    private final CategoryService categoryService;
 
-    private static final Integer PAGE_SIZE = 40;
-
-    public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+    public ProductService(ProductRepository productRepository, IImageService imageService, CategoryService categoryService) {
         this.productRepository = productRepository;
-        this.categoryRepository = categoryRepository;
+        this.imageService = imageService;
+        this.categoryService = categoryService;
     }
 
     @Override
-    public void createProduct(ProductRequestDto productRequestDto) throws EntityExistsException {
-        if (productRepository.findByNameIgnoreCase(productRequestDto.name()).isPresent()) {
-            throw new EntityExistsException(Message.ProductMessage.PRODUCT_EXISTS.name());
-        }
-        var newProduct = new Product();
-        addCategoriesToProduct(newProduct, productRequestDto.categoriesIds());
-        List<String> urls = uploadFilesAndGetUrls(productRequestDto.files());
-        addImagesToProduct(newProduct, urls);
-        BeanUtils.copyProperties(productRequestDto, newProduct);
-        productRepository.save(newProduct);
-    }
+    public void createProduct(ProductRequestDto productRequestDto) {
+        var product = new Product();
 
-    private List<String> uploadFilesAndGetUrls(List<MultipartFile> files) throws EntityExistsException {
-        List<String> urls = new ArrayList<>();
-        try {
-            for (MultipartFile file : files) {
-                awsBucket.uploadFile(file);
-                String key = awsBucket.generateKey(file);
-                urls.add(awsBucket.getFileUrl(key).toString());
-            }
-        } catch (S3Exception | IOException e) {
-            throw new EntityExistsException(Message.ProductMessage.PRODUCT_EXISTS.name());
-        }
-        return urls;
+        checkEntityAvailability(productRequestDto.name(),
+                productRepository, productRepository::findByNameIgnoreCase,
+                PRODUCT_EXISTS);
+
+        mapRequest(productRequestDto, product);
+        addCategories(product, productRequestDto.categoriesIds());
+        addImages(product, productRequestDto.files());
+        saveProduct(product);
     }
 
     @Override
-    public void updateProduct(UUID productId, ProductRequestDto productRequestDto) throws EntityExistsException, EntityNotFoundException {
-        Product existingProduct = productRepository.findById(productId)
-                .orElseThrow(() -> new EntityNotFoundException(Message.ProductMessage.PRODUCT_NOT_FOUND.name()));
-
-        if (productRepository.findByNameIgnoreCase(productRequestDto.name()).isPresent()) {
-            if (!existingProduct.getName().equalsIgnoreCase(productRequestDto.name())) {
-                throw new EntityExistsException(Message.ProductMessage.PRODUCT_EXISTS.name());
-            }
+    public void updateProduct(UUID productId, ProductRequestDto productRequestDto) {
+        Product existingProduct = getById(productId, productRepository, PRODUCT_NOT_FOUND);
+        if(!isSameValue(productRequestDto.name(), existingProduct.getName())) {
+            checkEntityAvailability(productRequestDto.name(),
+                    productRepository, productRepository::findByNameIgnoreCase,
+                    PRODUCT_EXISTS);
         }
 
-        existingProduct.getCategories().clear();
-        addCategoriesToProduct(existingProduct, productRequestDto.categoriesIds());
-        BeanUtils.copyProperties(productRequestDto, existingProduct);
-        productRepository.save(existingProduct);
+        mapRequest(productRequestDto, existingProduct);
+        addCategories(existingProduct, productRequestDto.categoriesIds());
+        addImages(existingProduct, productRequestDto.files());
+        saveProduct(existingProduct);
     }
 
     @Override
-    public void deleteProduct(UUID productId) throws EntityNotFoundException {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new EntityNotFoundException(Message.ProductMessage.PRODUCT_NOT_FOUND.name()));
-
+    public void deleteProduct(UUID productId) {
+        Product product = getById(productId, productRepository, PRODUCT_NOT_FOUND);
         productRepository.delete(product);
     }
 
     @Override
-    public Page<ProductResponseDto> getProducts(int page, ProductSearchFilterDto filter, Sort.Direction sortDirection) {
-        Sort sort = Sort.by(sortDirection,"name","price"); //direction --> ASC or "DESC
-        Pageable pageable = PageRequest.of(page, PAGE_SIZE, sort);
-        Specification<Product> productSpecification = ProductSpecification.fromFilter(filter);
-        Page<Product> productsPage = productRepository.findAll(productSpecification, pageable);
-
-        return productsPage.map(Mapper::toProductResponseDto);
+    public ProductResponseDto getProduct(UUID productId) {
+        Product product = getById(productId, productRepository, PRODUCT_NOT_FOUND);
+        return Mapper.toProductResponseDto(product);
     }
 
-    private void addCategoriesToProduct(Product product, List<UUID> categoriesIds) throws EntityNotFoundException {
-        for (UUID categoryId : categoriesIds) {
-            Category category = categoryRepository.findById(categoryId)
-                    .orElseThrow(() -> new EntityNotFoundException(Message.CategoryMessage.CATEGORY_NOT_FOUND.name()));
-            product.addCategory(category);
+    @Override
+    public Page<ProductSearchDto> searchProducts(SearchParams params, PageRequestDto pageRequest) {
+        Pageable page = PageRequest.of(pageRequest.page(), pageRequest.size(), pageRequest.direction());
+        Page<Product> products = productRepository.searchProducts(params, page);
+
+        return products.map(Mapper::toProductSearchDto);
+
+    }
+
+
+    private void saveProduct(Product product){
+        productRepository.save(product);
+    }
+
+    private void addCategories(Product product, List<UUID> categoryIds){
+        for(var categoryId : categoryIds){
+            categoryService.addCategoryToProduct(categoryId, product);
         }
     }
 
-    private void addImagesToProduct(Product product, List<String> urls) {
-        for (String url : urls) {
-            product.getImages().add(url);
+    private void addImages(Product product, List<MultipartFile> files){
+        for(var file : files){
+            imageService.addImageToProduct(file, product);
         }
     }
 }

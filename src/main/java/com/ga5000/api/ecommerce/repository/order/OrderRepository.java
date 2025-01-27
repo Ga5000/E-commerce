@@ -1,6 +1,6 @@
 package com.ga5000.api.ecommerce.repository.order;
 
-import com.ga5000.api.ecommerce.domain.order.Order;
+import com.ga5000.api.ecommerce.domain.transaction.order.Order;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

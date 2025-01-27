@@ -1,105 +1,94 @@
 package com.ga5000.api.ecommerce.domain.user;
 
-import com.ga5000.api.ecommerce.domain.cart.Cart;
-import com.ga5000.api.ecommerce.domain.comment.Comment;
-import com.ga5000.api.ecommerce.domain.order.Order;
-import com.ga5000.api.ecommerce.domain.payment.Payment;
-import com.ga5000.api.ecommerce.domain.address.Address;
+import com.ga5000.api.ecommerce.domain.review.Review;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 
 @Entity
-@Table(name = "users")
-public class User implements UserDetails {
-
+@Inheritance(strategy = InheritanceType.JOINED)
+public abstract class User implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "user_id", nullable = false)
+    @JdbcTypeCode(SqlTypes.UUID)
     private UUID userId;
 
-    @Column(nullable = false)
-    @NotBlank(message = "O primeiro nome não pode estar em branco")
-    private String firstName = "";
+    @Column(name = "name", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @NotBlank(message = "Name is mandatory")
+    private String name;
 
-    @Column(nullable = false)
-    @NotBlank(message = "O sobrenome não pode estar em branco")
-    private String lastName = "";
+    @Column(name = "last_name", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @NotBlank(message = "Last name is mandatory")
+    private String lastName;
 
-    @Column(nullable = false, unique = true)
-    @Email(message = "O e-mail deve ser válido")
-    private String email = "";
+    private String fullName;
 
-    @Column(nullable = false)
-    @NotBlank(message = "A senha não pode estar em branco")
-    private String password = "";
+    @Column(name = "email", nullable = false, unique = true)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @NotBlank(message = "E-mail is mandatory")
+    @Email(message = "E-mail is not valid")
+    private String email;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @Column(name = "password", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @NotBlank(message = "Password is mandatory")
+    private String password;
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt;
-
-    @OneToMany(mappedBy = "user")
-    private List<Address> addresses = new ArrayList<>();
-
-    @OneToOne(cascade = CascadeType.PERSIST)
-    @JoinColumn(name = "cart_id", referencedColumnName = "cartId")
-    private Cart cart = new Cart();
-
-    @OneToMany(mappedBy = "user")
-    private List<Order> orders = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user")
-    private List<Payment> payments = new ArrayList<>();
-
-    @OneToMany(mappedBy = "user")
-    private List<Comment> comments = new ArrayList<>();
+    @Column(name = "created_at", nullable = false)
+    @JdbcTypeCode(SqlTypes.DATE)
+    private LocalDate createdAt;
 
     @Enumerated(EnumType.STRING)
     private Role role;
 
-    public User() {
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private List<Review> reviews;
+
+    public User(UUID userId, String name, String lastName, String fullName, String email, String password, Role role,
+                List<Review> reviews) {
+        this.userId = userId;
+        this.name = name;
+        this.lastName = lastName;
+        this.fullName = fullName;
+        this.email = email;
+        this.password = password;
+        this.createdAt = LocalDate.now();
+        this.role = role;
+        this.reviews = reviews;
     }
 
-    public User(UUID userId, String firstName, String lastName, String email, String password, LocalDateTime createdAt,
-                LocalDateTime updatedAt, List<Address> addresses, Cart cart, List<Order> orders,
-                List<Payment> payments, List<Comment> comments, Role role) {
-        this.userId = userId;
-        this.firstName = firstName;
+    public User() {
+        this.createdAt = LocalDate.now();
+    }
+
+    public User(String name, String lastName, String email, String password, Role role, List<Review> reviews) {
+        this.name = name;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
-        this.addresses = addresses;
-        this.cart = cart;
-        this.orders = orders;
-        this.payments = payments;
-        this.comments = comments;
+        this.createdAt = LocalDate.now();
         this.role = role;
+        this.reviews = reviews;
     }
 
-    // Getters and Setters
-    public UUID getUserId() {
-        return userId;
+    public String getName() {
+        return name;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getLastName() {
@@ -110,6 +99,14 @@ public class User implements UserDetails {
         this.lastName = lastName;
     }
 
+    public String getFullName() {
+        return fullName;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
     public String getEmail() {
         return email;
     }
@@ -118,64 +115,13 @@ public class User implements UserDetails {
         this.email = email;
     }
 
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
-
-    public void setUpdatedAt(LocalDateTime updatedAt) {
-        this.updatedAt = updatedAt;
-    }
-
-    public List<Address> getAddresses() {
-        return addresses;
-    }
-
-    public void setAddresses(List<Address> addresses) {
-        this.addresses = addresses;
-    }
-
-    public Cart getCart() {
-        return cart;
-    }
-
-    public void setCart(Cart cart) {
-        this.cart = cart;
-    }
-
-    public List<Order> getOrders() {
-        return orders;
-    }
-
-    public void setOrders(List<Order> orders) {
-        this.orders = orders;
-    }
-
-    public List<Payment> getPayments() {
-        return payments;
-    }
-
-    public void setPayments(List<Payment> payments) {
-        this.payments = payments;
-    }
-
-    public List<Comment> getComments() {
-        return comments;
-    }
-
-    public void setComments(List<Comment> comments) {
-        this.comments = comments;
     }
 
     public Role getRole() {
@@ -186,19 +132,44 @@ public class User implements UserDetails {
         this.role = role;
     }
 
-    @Override
-    public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.singleton(new SimpleGrantedAuthority(role.getRole()));
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public List<Review> getReviews() {
+        return reviews;
+    }
+
+    public void setReviews(List<Review> reviews) {
+        this.reviews = reviews;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void updateFullName() {
+        this.fullName = name + " " + lastName;
     }
 
     @Override
-    public String getPassword() {
-        return this.password;
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(() -> "ROLE_" + role.name());
     }
 
     @Override
     public String getUsername() {
-        return this.email;
+        return fullName;
     }
 
     @Override
@@ -219,5 +190,9 @@ public class User implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public boolean isAdmin(){
+        return this.role == Role.ADMIN;
     }
 }

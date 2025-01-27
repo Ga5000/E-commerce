@@ -1,76 +1,93 @@
 package com.ga5000.api.ecommerce.domain.product;
 
-import com.ga5000.api.ecommerce.domain.category.Category;
-import com.ga5000.api.ecommerce.domain.comment.Comment;
+import com.ga5000.api.ecommerce.domain.product.category.Category;
+import com.ga5000.api.ecommerce.domain.product.image.Image;
+import com.ga5000.api.ecommerce.domain.review.Review;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
-import org.hibernate.validator.constraints.URL;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Entity
-@Table(name = "products")
 public class Product {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "product_id", nullable = false)
+    @JdbcTypeCode(SqlTypes.UUID)
     private UUID productId;
 
-    @Column(nullable = false, unique = true)
-    @NotBlank(message = "O nome não pode estar em branco")
+
+    @Column(name = "name", nullable = false, unique = true, length = 100)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @NotBlank(message = "Name is mandatory")
     private String name;
 
-    @Column(nullable = false)
-    @Lob
-    @NotBlank(message = "A descrição não pode estar em branco")
+    @Column(name = "description", nullable = false, length = 500)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String description;
 
-    @Column(nullable = false)
-    @Positive(message = "O preço deve ser maior que zero")
-    private double price;
+    @Column(name = "price", nullable = false)
+    @JdbcTypeCode(SqlTypes.DOUBLE)
+    @Positive(message = "Price must be greater than 0")
+    private double price; // in reais
 
-    @Column(nullable = false)
-    @PositiveOrZero(message = "O estoque não pode ser negativo")
-    private int inventory;
+    @Column(name = "stock", nullable = false)
+    @JdbcTypeCode(SqlTypes.INTEGER)
+    @PositiveOrZero(message = "Stock must be greater than or equal to 0")
+    private int stock; // in units
 
-    @ElementCollection
-    @CollectionTable(name = "product_images", joinColumns = @JoinColumn(name = "product_id"))
-    @Column(name = "image_url", nullable = false)
-    @URL(message = "A URL da imagem deve ser válida")
-    private List<String> images = new ArrayList<>();
+    @Column(name = "discount")
+    @JdbcTypeCode(SqlTypes.INTEGER)
+    @PositiveOrZero(message = "Discount must be greater or equal to 0")
+    private int discount; // in percentage
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private List<Image> images;
 
-    @ManyToMany
-    @JoinTable(
-            name = "product_categories",
-            joinColumns = @JoinColumn(name = "product_id"),
-            inverseJoinColumns = @JoinColumn(name = "category_id")
-    )
-    @NotEmpty(message = "Um produto deve ter pelo menos uma categoria")
-    private Set<Category> categories = new HashSet<>();
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private Set<Category> categories;
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
+    private List<Review> reviews;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments = new ArrayList<>();
+    public Product(UUID productId, String name, String description, double price, int stock, int discount,
+                   List<Image> images, Set<Category> categories, List<Review> reviews) {
+        this.productId = productId;
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.stock = stock;
+        this.discount = discount;
+        this.images = images;
+        this.categories = categories;
+        this.reviews = reviews;
+    }
 
     public Product() {
     }
 
-    public Product(String name, String description, double price, int inventory, List<String> images,
-                   Set<Category> categories) {
+    public Product(String name, String description, double price, int stock, int discount, List<Image> images,
+                   Set<Category> categories, List<Review> reviews) {
         this.name = name;
         this.description = description;
         this.price = price;
-        this.inventory = inventory;
+        this.stock = stock;
+        this.discount = discount;
         this.images = images;
         this.categories = categories;
+        this.reviews = reviews;
     }
 
     public UUID getProductId() {
         return productId;
+    }
+
+    public void setProductId(UUID productId) {
+        this.productId = productId;
     }
 
     public String getName() {
@@ -97,42 +114,43 @@ public class Product {
         this.price = price;
     }
 
-    public int getInventory() {
-        return inventory;
+    public int getStock() {
+        return stock;
     }
 
-    public void setInventory(int inventory) {
-        this.inventory = inventory;
+    public void setStock(int stock) {
+        this.stock = stock;
     }
 
-    public List<String> getImages() {
-        return Collections.unmodifiableList(images);
+    public int getDiscount() {
+        return discount;
     }
 
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
+    public void setDiscount(int discount) {
+        this.discount = discount;
+    }
+
+    public List<Image> getImages() {
+        return images;
+    }
+
+    public void setImages(List<Image> images) {
+        this.images = images;
     }
 
     public Set<Category> getCategories() {
-        return Collections.unmodifiableSet(categories);
+        return categories;
     }
 
-    public void addCategory(Category category) {
-        this.categories.add(category);
+    public void setCategories(Set<Category> categories) {
+        this.categories = categories;
     }
 
-    public void removeCategory(Category category) {
-        this.categories.remove(category);
+    public List<Review> getReviews() {
+        return reviews;
     }
 
-    public List<Comment> getComments() {
-        return Collections.unmodifiableList(comments);
-    }
-
-    public double getAverageRating() {
-        return comments.stream()
-                .mapToInt(Comment::getRating)
-                .average()
-                .orElse(0.0);
+    public void setReviews(List<Review> reviews) {
+        this.reviews = reviews;
     }
 }

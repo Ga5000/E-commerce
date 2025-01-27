@@ -1,97 +1,107 @@
 package com.ga5000.api.ecommerce.domain.address;
 
-import com.ga5000.api.ecommerce.domain.order.Order;
-import com.ga5000.api.ecommerce.domain.user.User;
+import com.ga5000.api.ecommerce.domain.transaction.order.Order;
+import com.ga5000.api.ecommerce.domain.user.client.Client;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.UUID;
 
 @Entity
-@Table(name = "addresses")
 public class Address {
-
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "address_id", nullable = false)
+    @JdbcTypeCode(SqlTypes.UUID)
     private UUID addressId;
 
-    @Column(nullable = false)
-    @NotBlank(message = "CEP é obrigatório")
-    private String cep;
+    @NotBlank(message = "Postal code must not be blank")
+    @Column(name = "postal_code", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String postalCode;
 
-    @Column(nullable = false)
-    @NotBlank(message = "Rua é obrigatória")
+    @NotBlank(message = "Street must not be blank")
+    @Column(name = "street", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String street;
 
+    @NotBlank(message = "Number must not be blank")
+    @Column(name = "number", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String number;
+
+    @Column(name = "complement")
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String complement;
 
-    @Column(nullable = false)
-    @NotBlank(message = "Bairro é obrigatório")
+    @NotBlank(message = "Neighborhood must not be blank")
+    @Column(name = "neighborhood", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String neighborhood;
 
-    @Column(nullable = false)
-    @NotBlank(message = "Cidade é obrigatória")
+    @NotBlank(message = "City must not be blank")
+    @Column(name = "city", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String city;
 
-    @Column(nullable = false)
-    @NotBlank(message = "Estado é obrigatório")
+    @NotBlank(message = "State must not be blank")
+    @Column(name = "state", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String state;
 
-    @Column(nullable = false)
-    @NotBlank(message = "País é obrigatório")
-    private String country;
-
-    @Transient
-    private String formattedAddress;
+    @NotBlank(message = "Region must not be blank")
+    @Column(name = "region", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    private String region;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "userId")
-    private User user;
+    @JoinColumn(name = "user_id", nullable = false)
+    private Client client;
 
-    @OneToOne(mappedBy = "shippingAddress")
+    @OneToOne
+    @JoinColumn(name = "order_id", nullable = false)
     private Order order;
 
-    public Address() {}
-
-    public Address(String cep, String street, String complement, String neighborhood,
-                   String city, String state, String country) {
-        this.cep = cep;
+    public Address(UUID addressId, String postalCode, String street, String number, String complement,
+                   String neighborhood, String city, String state, String region, Client client, Order order) {
+        this.addressId = addressId;
+        this.postalCode = postalCode;
         this.street = street;
+        this.number = number;
         this.complement = complement;
         this.neighborhood = neighborhood;
         this.city = city;
         this.state = state;
-        this.country = country;
-        updateFormattedAddress();
+        this.region = region;
+        this.client = client;
+        this.order = order;
     }
 
-    @PostLoad
-    private void updateFormattedAddress() {
-        StringBuilder addressBuilder = new StringBuilder();
-        addressBuilder.append(street).append(", ")
-                .append(neighborhood).append(", ")
-                .append(city).append(", ")
-                .append(state).append(", ")
-                .append(country);
-
-        if (complement != null && !complement.isBlank()) {
-            addressBuilder.append(" - ").append(complement);
-        }
-
-        this.formattedAddress = addressBuilder.toString();
+    public Address(String postalCode, String street, String number, String complement, String neighborhood,
+                   String city, String state, String region, Client client, Order order) {
+        this.postalCode = postalCode;
+        this.street = street;
+        this.number = number;
+        this.complement = complement;
+        this.neighborhood = neighborhood;
+        this.city = city;
+        this.state = state;
+        this.region = region;
+        this.client = client;
+        this.order = order;
     }
 
-    public UUID getAddressId() {
-        return addressId;
+    public Address() {
     }
 
-    public String getCep() {
-        return cep;
+    public String getPostalCode() {
+        return postalCode;
     }
 
-    public void setCep(String cep) {
-        this.cep = cep;
-        updateFormattedAddress();
+    public void setPostalCode(String postalCode) {
+        this.postalCode = postalCode;
     }
 
     public String getStreet() {
@@ -100,7 +110,14 @@ public class Address {
 
     public void setStreet(String street) {
         this.street = street;
-        updateFormattedAddress();
+    }
+
+    public String getNumber() {
+        return number;
+    }
+
+    public void setNumber(String number) {
+        this.number = number;
     }
 
     public String getComplement() {
@@ -109,7 +126,6 @@ public class Address {
 
     public void setComplement(String complement) {
         this.complement = complement;
-        updateFormattedAddress();
     }
 
     public String getNeighborhood() {
@@ -118,7 +134,6 @@ public class Address {
 
     public void setNeighborhood(String neighborhood) {
         this.neighborhood = neighborhood;
-        updateFormattedAddress();
     }
 
     public String getCity() {
@@ -127,7 +142,6 @@ public class Address {
 
     public void setCity(String city) {
         this.city = city;
-        updateFormattedAddress();
     }
 
     public String getState() {
@@ -136,22 +150,22 @@ public class Address {
 
     public void setState(String state) {
         this.state = state;
-        updateFormattedAddress();
     }
 
-
-
-    public String getCountry() {
-        return country;
+    public String getRegion() {
+        return region;
     }
 
-    public void setCountry(String country) {
-        this.country = country;
-        updateFormattedAddress();
+    public void setRegion(String region) {
+        this.region = region;
     }
 
-    public String getFormattedAddress() {
-        return formattedAddress;
+    public Client getClient() {
+        return client;
+    }
+
+    public void setClient(Client client) {
+        this.client = client;
     }
 
     public Order getOrder() {
@@ -162,11 +176,11 @@ public class Address {
         this.order = order;
     }
 
-    public User getUser() {
-        return user;
+    public UUID getAddressId() {
+        return addressId;
     }
 
-    public void setUser(User user) {
-        this.user = user;
+    public void setAddressId(UUID addressId) {
+        this.addressId = addressId;
     }
 }

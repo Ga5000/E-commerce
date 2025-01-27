@@ -1,62 +1,49 @@
 package com.ga5000.api.ecommerce.repository.product;
 
 import com.ga5000.api.ecommerce.domain.product.Product;
-import com.ga5000.api.ecommerce.dto.product.ProductSearchFilterDto;
+import com.ga5000.api.ecommerce.dto.product.SearchParams;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.ArrayList;
 import java.util.List;
+import jakarta.persistence.criteria.Predicate;
 
 public class ProductSpecification {
+    public static Specification<Product> bySearchParams(SearchParams searchParams) {
+        return (root, query, criteriaBuilder) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
+            if (searchParams != null) {
 
-    public static Specification<Product> fromFilter(ProductSearchFilterDto filter) {
-        return Specification.where(nameLike(filter.name()))
-                .and(priceRange(filter.minPrice(), filter.maxPrice()))
-                .and(hasCategories(filter.categoryNames()))
-                .and(isInStock(filter.available()));
-    }
+                if (searchParams.name() != null && !searchParams.name().isBlank()) {
+                    predicates.add(criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get("name")),
+                            "%" + searchParams.name().toLowerCase() + "%"
+                    ));
+                }
 
+                if (searchParams.minPrice() > 0) {
+                    predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("price"), searchParams.minPrice()));
+                }
 
-    private static Specification<Product> nameLike(String name) {
-        return (root, query, cb) -> {
-            if (name == null || name.trim().isEmpty()) {
-                return cb.conjunction();
+                if (searchParams.MaxPrice() > 0) {
+                    predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("price"), searchParams.MaxPrice()));
+                }
+
+                if (searchParams.hasDiscount()) {
+                    predicates.add(criteriaBuilder.notEqual(root.get("discount"), 0));
+                }
+
+                if (searchParams.inStock()) {
+                    predicates.add(criteriaBuilder.greaterThan(root.get("stock"), 0));
+                }
+
+                if (searchParams.categories() != null && !searchParams.categories().isEmpty()) {
+                    predicates.add(root.join("categories").in(searchParams.categories()));
+                }
             }
-            return cb.like(cb.lower(root.get("name")), "%" + name.toLowerCase() + "%");
-        };
-    }
 
-
-    private static Specification<Product> priceRange(int minPrice, int maxPrice) {
-        return (root, query, cb) -> {
-            if (minPrice <= 0 && maxPrice <= 0) {
-                return cb.conjunction();
-            }
-            if (minPrice > 0 && maxPrice > 0) {
-                return cb.between(root.get("price"), minPrice, maxPrice);
-            }
-            if (minPrice > 0) {
-                return cb.greaterThanOrEqualTo(root.get("price"), minPrice);
-            }
-            return cb.lessThanOrEqualTo(root.get("price"), maxPrice);
-        };
-    }
-
-    private static Specification<Product> hasCategories(List<String> categoryNames) {
-        return (root, query, cb) -> {
-            if (categoryNames == null || categoryNames.isEmpty()) {
-                return cb.conjunction();
-            }
-            return root.get("category").get("categoryName").in(categoryNames);
-        };
-    }
-
-    private static Specification<Product> isInStock(boolean available) {
-        return (root, query, cb) -> {
-            if (!available) {
-                return cb.conjunction();
-            }
-            return cb.greaterThan(root.get("inventory"), 0);
+            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
     }
 }
