@@ -1,56 +1,44 @@
 package com.ga5000.api.ecommerce.domain.item;
 
+import com.ga5000.api.ecommerce.domain.item.cartItem.CartItem;
 import com.ga5000.api.ecommerce.domain.product.Product;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
+import java.util.Objects;
 import java.util.UUID;
 
-@MappedSuperclass
-public abstract class Item {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @JdbcTypeCode(SqlTypes.UUID)
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED)
+public class Item {
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID itemId;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "product_id", referencedColumnName = "productId")
-    private Product product;  // The product being added to the cart or order
+    private Product product;
 
-    @Column(name = "quantity", nullable = false)
-    @JdbcTypeCode(SqlTypes.INTEGER)
-    @Min(value = 1, message = "Quantity must be greater than 0")
-    private int quantity;  // The quantity of the product
+    private int quantity;
 
-    @Column(name = "unit_price", nullable = false)
-    @JdbcTypeCode(SqlTypes.DOUBLE)
-    private double unitPrice;  // The price of the product * quantity
-
-    public Item(UUID itemId, Product product, int quantity, double unitPrice) {
+    public Item(UUID itemId, Product product, int quantity) {
         this.itemId = itemId;
         this.product = product;
         this.quantity = quantity;
-        this.unitPrice = unitPrice;
     }
 
-    public Item() {
-    }
-
-    public Item(Product product, int quantity, double unitPrice) {
+    public Item(Product product, int quantity) {
         this.product = product;
         this.quantity = quantity;
-        this.unitPrice = unitPrice;
     }
 
-    public UUID getItemId() {
-        return itemId;
+    public Item(){
     }
 
-    public void setItemId(UUID itemId) {
-        this.itemId = itemId;
+    public double getUnitPrice(){
+        return getProduct().getPrice();
+    }
+
+    public double getTotalItemPrice(){
+        return getUnitPrice() * getQuantity();
     }
 
     public Product getProduct() {
@@ -61,6 +49,14 @@ public abstract class Item {
         this.product = product;
     }
 
+    public UUID getItemId() {
+        return itemId;
+    }
+
+    public void setItemId(UUID itemId) {
+        this.itemId = itemId;
+    }
+
     public int getQuantity() {
         return quantity;
     }
@@ -69,15 +65,16 @@ public abstract class Item {
         this.quantity = quantity;
     }
 
-    public double getUnitPrice() {
-        return unitPrice;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        CartItem cartItem = (CartItem) o;
+        return quantity == cartItem.getQuantity() && Objects.equals(product.getProductId(), cartItem.getProduct().getProductId());
     }
 
-    public void setUnitPrice(double unitPrice) {
-        this.unitPrice = unitPrice;
-    }
-
-    public double getTotalPrice() {
-        return this.unitPrice * this.quantity;
+    @Override
+    public int hashCode() {
+        return Objects.hash(product.getProductId(), quantity);
     }
 }

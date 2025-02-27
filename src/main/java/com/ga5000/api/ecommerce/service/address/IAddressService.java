@@ -1,18 +1,14 @@
 package com.ga5000.api.ecommerce.service.address;
 
-import com.ga5000.api.ecommerce.dto.address.AddressRequestDto;
-import com.ga5000.api.ecommerce.dto.address.AddressResponseDto;
-import jakarta.persistence.EntityExistsException;
-import jakarta.persistence.EntityNotFoundException;
+import com.ga5000.api.ecommerce.dto.address.AddressRequest;
+import com.ga5000.api.ecommerce.dto.address.AddressResponse;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public interface IAddressService {
-    void createAddress(AddressRequestDto request) throws EntityExistsException;
-    void updateAddress(UUID addressId, AddressRequestDto request) throws EntityExistsException;
-    void deleteAddress(UUID addressId);
+    void createAddress(AddressRequest addressRequest);
+    void removeAddress(UUID addressId);
 
-    List<AddressResponseDto> getAddresses();
-    AddressResponseDto getAddress(UUID addressId);
+    Set<AddressResponse> getAddresses();
 }

@@ -1,85 +1,76 @@
 package com.ga5000.api.ecommerce.domain.product;
 
-import com.ga5000.api.ecommerce.domain.product.category.Category;
-import com.ga5000.api.ecommerce.domain.product.image.Image;
-import com.ga5000.api.ecommerce.domain.review.Review;
+import com.ga5000.api.ecommerce.domain.category.Category;
+import com.ga5000.api.ecommerce.domain.image.Image;
+import com.ga5000.api.ecommerce.domain.item.Item;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 @Entity
+@Table(name = "products")
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "product_id", nullable = false)
-    @JdbcTypeCode(SqlTypes.UUID)
     private UUID productId;
 
-
-    @Column(name = "name", nullable = false, unique = true, length = 100)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    @NotBlank(message = "Name is mandatory")
+    @Column(length = 120, unique = true)
     private String name;
 
-    @Column(name = "description", nullable = false, length = 500)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(length = 500)
     private String description;
 
-    @Column(name = "price", nullable = false)
-    @JdbcTypeCode(SqlTypes.DOUBLE)
-    @Positive(message = "Price must be greater than 0")
-    private double price; // in reais
+    private double price;
 
-    @Column(name = "stock", nullable = false)
-    @JdbcTypeCode(SqlTypes.INTEGER)
-    @PositiveOrZero(message = "Stock must be greater than or equal to 0")
-    private int stock; // in units
+    private int stock;
 
-    @Column(name = "discount")
-    @JdbcTypeCode(SqlTypes.INTEGER)
-    @PositiveOrZero(message = "Discount must be greater or equal to 0")
-    private int discount; // in percentage
+    private int discount; // %
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    private List<Image> images;
+    private LocalDate createdAt;
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    private Set<Category> categories;
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private List<Image> images = new ArrayList<>();
 
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
-    private List<Review> reviews;
+    @ManyToMany(cascade = {CascadeType.DETACH, CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "product_categories",
+            joinColumns = @JoinColumn(name = "product_id"),
+            inverseJoinColumns = @JoinColumn(name = "category_id")
+    )
+    private List<Category> categories = new ArrayList<>();
 
-    public Product(UUID productId, String name, String description, double price, int stock, int discount,
-                   List<Image> images, Set<Category> categories, List<Review> reviews) {
+    @OneToOne(mappedBy = "product", cascade = CascadeType.ALL)
+    private Item item;
+
+    public Product(UUID productId, String name, String description, double price, int stock,
+                   int discount, List<Image> images, List<Category> categories) {
         this.productId = productId;
         this.name = name;
         this.description = description;
         this.price = price;
         this.stock = stock;
         this.discount = discount;
+        this.createdAt = LocalDate.now();
         this.images = images;
         this.categories = categories;
-        this.reviews = reviews;
     }
 
-    public Product() {
-    }
-
-    public Product(String name, String description, double price, int stock, int discount, List<Image> images,
-                   Set<Category> categories, List<Review> reviews) {
+    public Product(String name, String description, double price, int stock, int discount, List<Image> images, List<Category> categories) {
         this.name = name;
         this.description = description;
         this.price = price;
         this.stock = stock;
         this.discount = discount;
+        this.createdAt = LocalDate.now();
         this.images = images;
         this.categories = categories;
-        this.reviews = reviews;
+    }
+
+    public Product(){
+        this.createdAt = LocalDate.now();
     }
 
     public UUID getProductId() {
@@ -130,6 +121,14 @@ public class Product {
         this.discount = discount;
     }
 
+    public LocalDate getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDate createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public List<Image> getImages() {
         return images;
     }
@@ -138,19 +137,19 @@ public class Product {
         this.images = images;
     }
 
-    public Set<Category> getCategories() {
+    public List<Category> getCategories() {
         return categories;
     }
 
-    public void setCategories(Set<Category> categories) {
+    public void setCategories(List<Category> categories) {
         this.categories = categories;
     }
 
-    public List<Review> getReviews() {
-        return reviews;
+    public Item getItem() {
+        return item;
     }
 
-    public void setReviews(List<Review> reviews) {
-        this.reviews = reviews;
+    public void setItem(Item item) {
+        this.item = item;
     }
 }

@@ -1,92 +1,75 @@
 package com.ga5000.api.ecommerce.service.address;
 
 import com.ga5000.api.ecommerce.domain.address.Address;
-import com.ga5000.api.ecommerce.domain.user.client.Client;
-import com.ga5000.api.ecommerce.dto.address.AddressRequestDto;
-import com.ga5000.api.ecommerce.dto.address.AddressResponseDto;
+import com.ga5000.api.ecommerce.dto.address.AddressRequest;
+import com.ga5000.api.ecommerce.dto.address.AddressResponse;
+import com.ga5000.api.ecommerce.exception.address.AddressAlreadyExistsException;
+import com.ga5000.api.ecommerce.exception.address.AddressNotFoundException;
 import com.ga5000.api.ecommerce.repository.address.AddressRepository;
-import com.ga5000.api.ecommerce.repository.user.UserRepository;
-import com.ga5000.api.ecommerce.utils.Mapper;
-import jakarta.persistence.EntityExistsException;
-import org.springframework.data.domain.Sort;
+import com.ga5000.api.ecommerce.service.auth.AuthService;
+import com.ga5000.api.ecommerce.utils.DtoMapper;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
-import static com.ga5000.api.ecommerce.utils.AuthUtil.getCurrentClient;
-import static com.ga5000.api.ecommerce.utils.ExceptionMessage.ADDRESS_EXISTS;
-import static com.ga5000.api.ecommerce.utils.ExceptionMessage.ADDRESS_NOT_FOUND;
-import static com.ga5000.api.ecommerce.utils.Mapper.toAddressResponse;
-import static com.ga5000.api.ecommerce.utils.RepositoryUtil.getById;
-import static com.ga5000.api.ecommerce.utils.RequestUtil.mapRequest;
-import static com.ga5000.api.ecommerce.utils.ValidationUtil.*;
+import static com.ga5000.api.ecommerce.utils.RepositoryUtils.findByIdOrThrow;
 
 @Service
-public class AddressService implements IAddressService {
+public class AddressService implements IAddressService{
+
     private final AddressRepository addressRepository;
-    private final UserRepository userRepository;
+    private final AuthService authService;
+    private final DtoMapper dtoMapper;
 
-    public AddressService(AddressRepository addressRepository, UserRepository userRepository) {
+    public AddressService(AddressRepository addressRepository, AuthService authService, DtoMapper dtoMapper) {
         this.addressRepository = addressRepository;
-        this.userRepository = userRepository;
+        this.authService = authService;
+        this.dtoMapper = dtoMapper;
     }
 
-    @Override
     @Transactional
-    public void createAddress(AddressRequestDto request) throws EntityExistsException {
-        var newAddress = new Address();
-        checkEntityAvailability(request.postalCode(), addressRepository,
-                addressRepository::findByPostalCode, ADDRESS_EXISTS);
+    @Override
+    public void createAddress(AddressRequest addressRequest) {
+        validateAddress(addressRequest.zipCode());
+        Address newAddress = new Address();
 
-        Client client = getCurrentClient(userRepository);
-        mapRequest(request, newAddress);
-        newAddress.setClient(client);
-
+        BeanUtils.copyProperties(addressRequest, newAddress);
         saveAddress(newAddress);
+        addressRepository.associateAddressWithUser(newAddress.getAddressId(), authService.getAuthenticatedUserEmail());
+
     }
 
-    @Override
     @Transactional
-    public void updateAddress(UUID addressId, AddressRequestDto request) throws EntityExistsException {
-        Address existingAddress = getById(addressId, addressRepository, "Address not found");
+    @Override
+    public void removeAddress(UUID addressId) {
+        Address address = findByIdOrThrow(addressId, addressRepository, AddressNotFoundException::new);
+        addressRepository.dissociateAddressFromUser(addressId, authService.getAuthenticatedUserEmail());
 
-        if (!isSameValue(existingAddress.getPostalCode(), request.postalCode())) {
-            checkEntityAvailability(request.postalCode(), addressRepository,
-                    addressRepository::findByPostalCode, ADDRESS_EXISTS);
+        if(addressRepository.countUsersAssociatedWithAddress(addressId) == 0) {
+            addressRepository.delete(address);
+        }else{
+            saveAddress(address);
         }
-
-        Client client = getCurrentClient(userRepository);
-        validateOwnership(client, existingAddress, Address::getClient);
-
-        mapRequest(request, existingAddress);
-        saveAddress(existingAddress);
     }
 
     @Override
-    @Transactional
-    public void deleteAddress(UUID addressId) {
-        Address existingAddress = getById(addressId, addressRepository, ADDRESS_NOT_FOUND);
-        Client client = getCurrentClient(userRepository);
-        validateOwnership(client, existingAddress, Address::getClient);
-        addressRepository.delete(existingAddress);
+    public Set<AddressResponse> getAddresses() {
+        return addressRepository.findAddressesByEmail(authService.getAuthenticatedUserEmail())
+                .stream().map(dtoMapper::toAddressResponse).collect(Collectors.toSet());
     }
 
-    @Override
-    public List<AddressResponseDto> getAddresses() {
-        return addressRepository.findAll(Sort.by(Sort.Order.asc("postalCode")))
-                .stream()
-                .map(Mapper::toAddressResponse)
-                .toList();
+    private void validateAddress(String zipCode) throws AddressAlreadyExistsException {
+        Address address = addressRepository.findByZipCode(zipCode);
+        if(address != null){
+            throw new AddressAlreadyExistsException();
+        }
     }
 
-    @Override
-    public AddressResponseDto getAddress(UUID addressId) {
-        return toAddressResponse(getById(addressId, addressRepository, ADDRESS_NOT_FOUND));
-    }
-
-    private void saveAddress(Address address) {
+    private void saveAddress(Address address){
         addressRepository.save(address);
     }
 

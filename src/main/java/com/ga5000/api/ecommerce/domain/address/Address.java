@@ -1,107 +1,59 @@
 package com.ga5000.api.ecommerce.domain.address;
 
-import com.ga5000.api.ecommerce.domain.transaction.order.Order;
-import com.ga5000.api.ecommerce.domain.user.client.Client;
+import com.ga5000.api.ecommerce.domain.order.Order;
+import com.ga5000.api.ecommerce.domain.user.User;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
-import java.util.UUID;
+import java.util.*;
 
 @Entity
+@Table(name = "addresses")
 public class Address {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(name = "address_id", nullable = false)
-    @JdbcTypeCode(SqlTypes.UUID)
+    @Id @GeneratedValue(strategy = GenerationType.UUID)
     private UUID addressId;
 
-    @NotBlank(message = "Postal code must not be blank")
-    @Column(name = "postal_code", nullable = false)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    private String postalCode;
-
-    @NotBlank(message = "Street must not be blank")
-    @Column(name = "street", nullable = false)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String street;
 
-    @NotBlank(message = "Number must not be blank")
-    @Column(name = "number", nullable = false)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     private String number;
 
-    @Column(name = "complement")
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    private String complement;
+    @Column(unique = true)
+    private String zipCode;
 
-    @NotBlank(message = "Neighborhood must not be blank")
-    @Column(name = "neighborhood", nullable = false)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    private String neighborhood;
+    private String complement; // optional
 
-    @NotBlank(message = "City must not be blank")
-    @Column(name = "city", nullable = false)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    private String city;
+    @ManyToMany(mappedBy = "deliveryAddresses", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private Set<User> users = new HashSet<>();
 
-    @NotBlank(message = "State must not be blank")
-    @Column(name = "state", nullable = false)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    private String state;
-
-    @NotBlank(message = "Region must not be blank")
-    @Column(name = "region", nullable = false)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
-    private String region;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private Client client;
-
-    @OneToOne
-    @JoinColumn(name = "order_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", referencedColumnName = "orderId")
     private Order order;
 
-    public Address(UUID addressId, String postalCode, String street, String number, String complement,
-                   String neighborhood, String city, String state, String region, Client client, Order order) {
+    public Address(UUID addressId, String street, String number, String zipCode, String complement, Set<User> users, Order order) {
         this.addressId = addressId;
-        this.postalCode = postalCode;
         this.street = street;
         this.number = number;
+        this.zipCode = zipCode;
         this.complement = complement;
-        this.neighborhood = neighborhood;
-        this.city = city;
-        this.state = state;
-        this.region = region;
-        this.client = client;
+        this.users = users;
         this.order = order;
     }
 
-    public Address(String postalCode, String street, String number, String complement, String neighborhood,
-                   String city, String state, String region, Client client, Order order) {
-        this.postalCode = postalCode;
+    public Address(String street, String number, String zipCode, Order order) {
         this.street = street;
         this.number = number;
-        this.complement = complement;
-        this.neighborhood = neighborhood;
-        this.city = city;
-        this.state = state;
-        this.region = region;
-        this.client = client;
+        this.zipCode = zipCode;
         this.order = order;
     }
 
     public Address() {
     }
 
-    public String getPostalCode() {
-        return postalCode;
+    public UUID getAddressId() {
+        return addressId;
     }
 
-    public void setPostalCode(String postalCode) {
-        this.postalCode = postalCode;
+    public void setAddressId(UUID addressId) {
+        this.addressId = addressId;
     }
 
     public String getStreet() {
@@ -120,6 +72,14 @@ public class Address {
         this.number = number;
     }
 
+    public String getZipCode() {
+        return zipCode;
+    }
+
+    public void setZipCode(String zipCode) {
+        this.zipCode = zipCode;
+    }
+
     public String getComplement() {
         return complement;
     }
@@ -128,44 +88,12 @@ public class Address {
         this.complement = complement;
     }
 
-    public String getNeighborhood() {
-        return neighborhood;
+    public Set<User> getUsers() {
+        return users;
     }
 
-    public void setNeighborhood(String neighborhood) {
-        this.neighborhood = neighborhood;
-    }
-
-    public String getCity() {
-        return city;
-    }
-
-    public void setCity(String city) {
-        this.city = city;
-    }
-
-    public String getState() {
-        return state;
-    }
-
-    public void setState(String state) {
-        this.state = state;
-    }
-
-    public String getRegion() {
-        return region;
-    }
-
-    public void setRegion(String region) {
-        this.region = region;
-    }
-
-    public Client getClient() {
-        return client;
-    }
-
-    public void setClient(Client client) {
-        this.client = client;
+    public void setUsers(Set<User> users) {
+        this.users = users;
     }
 
     public Order getOrder() {
@@ -176,11 +104,7 @@ public class Address {
         this.order = order;
     }
 
-    public UUID getAddressId() {
-        return addressId;
-    }
-
-    public void setAddressId(UUID addressId) {
-        this.addressId = addressId;
+    public String getCompleteAddress(){
+        return street + " " + number + " " + complement;
     }
 }

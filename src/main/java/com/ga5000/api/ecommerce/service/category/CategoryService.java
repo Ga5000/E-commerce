@@ -1,10 +1,14 @@
 package com.ga5000.api.ecommerce.service.category;
 
+import com.ga5000.api.ecommerce.domain.category.Category;
 import com.ga5000.api.ecommerce.domain.product.Product;
-import com.ga5000.api.ecommerce.domain.product.category.Category;
-import com.ga5000.api.ecommerce.dto.category.CategoryResponseDto;
+import com.ga5000.api.ecommerce.dto.category.CategoryRequest;
+import com.ga5000.api.ecommerce.dto.category.CategoryResponse;
+import com.ga5000.api.ecommerce.exception.category.CategoryAlreadyExistsException;
+import com.ga5000.api.ecommerce.exception.category.CategoryNotFoundException;
+import com.ga5000.api.ecommerce.exception.category.NoValueChangeException;
 import com.ga5000.api.ecommerce.repository.category.CategoryRepository;
-import com.ga5000.api.ecommerce.utils.Mapper;
+import com.ga5000.api.ecommerce.utils.DtoMapper;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,69 +16,84 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ga5000.api.ecommerce.utils.ExceptionMessage.CATEGORY_NOT_FOUND;
-import static com.ga5000.api.ecommerce.utils.RepositoryUtil.getById;
-import static com.ga5000.api.ecommerce.utils.ValidationUtil.checkEntityAvailability;
-import static com.ga5000.api.ecommerce.utils.ValidationUtil.isSameValue;
+import static com.ga5000.api.ecommerce.utils.RepositoryUtils.areFieldsEqual;
+import static com.ga5000.api.ecommerce.utils.RepositoryUtils.findByIdOrThrow;
 
 @Service
-public class CategoryService implements ICategoryService {
+public class CategoryService implements ICategoryService{
+
     private final CategoryRepository categoryRepository;
+    private final DtoMapper dtoMapper;
 
-    public CategoryService(CategoryRepository categoryRepository) {
+    public CategoryService(CategoryRepository categoryRepository, DtoMapper dtoMapper) {
         this.categoryRepository = categoryRepository;
+        this.dtoMapper = dtoMapper;
+    }
+
+    @Transactional
+    @Override
+    public void createCategory(CategoryRequest categoryRequest) {
+        validateCategory(categoryRequest.name());
+        saveCategory(new Category(categoryRequest.name()));
+    }
+
+    @Transactional
+    @Override
+    public void createCategories(List<CategoryRequest> categoryRequests) {
+        for (var category : categoryRequests){
+            validateCategory(category.name());
+        }
+        List<Category> categories = categoryRequests.stream()
+                .map(category -> new Category(category.name())).toList();
+
+        categoryRepository.saveAll(categories);
+    }
+
+    @Transactional
+    @Override
+    public void updateCategory(UUID categoryId, CategoryRequest categoryRequest) throws NoValueChangeException{
+        String newName = categoryRequest.name();
+        Category existingCategory = findByIdOrThrow(categoryId, categoryRepository,
+                CategoryNotFoundException::new);
+        if(areFieldsEqual(existingCategory.getName(), newName)){
+            throw new NoValueChangeException();
+        }
+        validateCategory(newName);
+        existingCategory.setName(newName);
+        saveCategory(existingCategory);
+    }
+
+    @Transactional
+    @Override
+    public void deleteCategory(UUID categoryId){
+        Category existingCategory = findByIdOrThrow(categoryId, categoryRepository,
+                CategoryNotFoundException::new);
+        categoryRepository.delete(existingCategory);
     }
 
     @Override
-    @Transactional
-    public void addCategory(String name) {
-        checkEntityAvailability(name, categoryRepository, categoryRepository::findByNameIgnoreCase, CATEGORY_NOT_FOUND);
-        var newCategory = new Category(name);
-        saveCategory(newCategory);
+    public List<CategoryResponse> getAllCategories() {
+        return categoryRepository.findAll(Sort.by( Sort.Direction.ASC, "name"))
+                .stream().map(dtoMapper::toCategoryResponse).toList();
     }
 
     @Override
-    @Transactional
-    public void updateCategory(UUID categoryId, String name) {
-        Category category = getById(categoryId, categoryRepository, CATEGORY_NOT_FOUND);
-        if(!isSameValue(name, category.getName())) {
-            checkEntityAvailability(name, categoryRepository, categoryRepository::findByNameIgnoreCase,
-                                                                                    CATEGORY_NOT_FOUND);
+    public List<CategoryResponse> getProductCategories(Product product) {
+        List<Category> categories = categoryRepository.findCategoriesByProductId(product.getProductId());
+
+        return categories.stream().map(dtoMapper::toCategoryResponse).toList();
+    }
+
+
+    private void validateCategory(String name) throws CategoryAlreadyExistsException {
+        Category category = categoryRepository.findByName(name);
+        if(category != null){
+            throw new CategoryAlreadyExistsException();
         }
 
-        category.setName(name);
-        saveCategory(category);
     }
 
-    @Override
-    @Transactional
-    public void deleteCategory(UUID categoryId) {
-        Category category = getById(categoryId, categoryRepository, CATEGORY_NOT_FOUND);
-        categoryRepository.delete(category);
-    }
-
-    @Override
-    public List<CategoryResponseDto> getAllCategories() {
-        return categoryRepository.findAll(Sort.by(Sort.Order.asc("name")))
-                                 .stream()
-                                 .map(Mapper::toCategoryResponseDto)
-                                 .toList();
-    }
-
-    @Override
-    public void addCategoryToProduct(UUID categoryId, Product product) {
-        Category category = getById(categoryId, categoryRepository, CATEGORY_NOT_FOUND);
-        if (category.getProduct() != null) {
-            if (!category.getProduct().equals(product)) {
-                category.setProduct(product);
-            }
-        } else {
-            category.setProduct(product);
-        }
-        saveCategory(category);
-    }
-
-    private void saveCategory(Category category) {
+    private void saveCategory(Category category){
         categoryRepository.save(category);
     }
 }
