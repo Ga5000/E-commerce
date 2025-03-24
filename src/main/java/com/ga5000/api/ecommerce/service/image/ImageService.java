@@ -1,49 +1,42 @@
 package com.ga5000.api.ecommerce.service.image;
 
-import com.ga5000.api.ecommerce.domain.product.Product;
-import com.ga5000.api.ecommerce.domain.image.Image;
-import com.ga5000.api.ecommerce.dto.image.ImageRequest;
-import com.ga5000.api.ecommerce.dto.image.ImageResponse;
-import com.ga5000.api.ecommerce.repository.image.ImageRepository;
-import com.ga5000.api.ecommerce.service.minioS3.MinioS3Service;
-import com.ga5000.api.ecommerce.utils.DtoMapper;
+import com.ga5000.api.ecommerce.domain.model.image.Image;
+import com.ga5000.api.ecommerce.domain.model.product.Product;
+import com.ga5000.api.ecommerce.domain.repository.image.ImageRepository;
+import com.ga5000.api.ecommerce.service.minio.MinioS3Service;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
+import java.util.UUID;
+
+import static com.ga5000.api.ecommerce.utils.RepositoryUtils.findByIdOrThrow;
 
 @Service
 public class ImageService implements IImageService {
-    private final MinioS3Service minioS3Service;
     private final ImageRepository imageRepository;
-    private final DtoMapper dtoMapper;
+    private final MinioS3Service minioS3Service;
+    private final String IMAGE_NOT_FOUND_MESSAGE = "Image not found";
 
-
-    public ImageService(MinioS3Service minioS3Service, ImageRepository imageRepository, DtoMapper dtoMapper) {
-        this.minioS3Service = minioS3Service;
+    public ImageService(ImageRepository imageRepository, MinioS3Service minioS3Service) {
         this.imageRepository = imageRepository;
-        this.dtoMapper = dtoMapper;
+        this.minioS3Service = minioS3Service;
     }
 
-    @Transactional
     @Override
-    public void addImageToProduct(ImageRequest imageRequest) {
-        var objectId = minioS3Service.uploadImage(imageRequest.file());
-        Image newImage = new Image(objectId, imageRequest.product());
-        imageRepository.save(newImage);
+    public void uploadImage(MultipartFile file, Product product) {
+        String objectId = minioS3Service.uploadImage(file);
+       saveImage(new Image(objectId, product));
     }
 
-    @Transactional
     @Override
-    public void removeImage(Image image) {
+    public void deleteImage(UUID id) {
+        var image = findByIdOrThrow(id, imageRepository, () -> new EntityNotFoundException(IMAGE_NOT_FOUND_MESSAGE));
         minioS3Service.deleteImage(image.getObjectId());
         imageRepository.delete(image);
     }
 
-    @Override
-    public List<ImageResponse> getProductImages(Product product) {
-        return product.getImages()
-                .stream()
-                .map(dtoMapper::toImageResponse).toList();
+    private void saveImage(Image image) {
+        imageRepository.save(image);
     }
 }
