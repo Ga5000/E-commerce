@@ -1,0 +1,19 @@
+server:
+  port: 8080
+spring:
+  application:
+    name: gateway
+  cloud:
+    # --- Eureka client setup ---
+    eureka:
+      client:
+        service-url:
+          defaultZone: http://localhost:8761/eureka/
+        register-with-eureka: true
+        fetch-registry: true
+
+    gateway:
+        discovery:
+            locator:
+            enabled: true
+            lower-case-service-id: true # normalize service IDs to lower-case
