@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: product-service
+
+    datasource:
+        url: jdbc:mysql://localhost:3306/productdb
+        username: root
+        password: password
+    jpa:
+        hibernate:
+            ddl-auto: update
+            show-sql: true
+        properties:
+            hibernate:
+                dialect: org.hibernate.dialect.PostgreSQLDialect
+    cloud:
+      # --- Eureka client setup ---
+      eureka:
+        client:
+          service-url:
+            defaultZone: http://localhost:8761/eureka/
+          register-with-eureka: true
+          fetch-registry: true
