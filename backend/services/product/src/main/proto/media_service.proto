@@ -1,0 +1,34 @@
+syntax='proto3';
+package media;
+option java_multiple_files=true;
+option java_package="com.ga5000.api.media";
+import "google/protobuf/empty.proto";
+
+service MediaService {
+  // Takes a list of multipart files and returns URLs
+  rpc UploadImages(UploadImagesRequest) returns (UploadResponse);
+  rpc DeleteImages(DeleteImagesRequest) returns (google.protobuf.Empty);
+}
+
+// Request containing multiple files
+
+message UploadImagesRequest {
+  repeated MultipartFile files = 1;
+}
+
+// A complete multipart file with metadata and content
+message MultipartFile {
+  string filename    = 2;
+  string contentType = 3;
+  bytes data         = 4;
+}
+
+message UploadResponse {
+  // list of URLs returned
+  repeated string urls = 1;
+}
+
+message DeleteImagesRequest {
+  repeated string filenames = 1;
+}
+

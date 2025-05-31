@@ -10,6 +10,7 @@
         <module name="e-commerce-backend.gateway.main" />
         <module name="e-commerce-backend.services.main" />
         <module name="e-commerce-backend.services.discovery.main" />
+        <module name="e-commerce-backend.services.media.main" />
         <module name="e-commerce-backend.services.product.main" />
       </profile>
     </annotationProcessing>

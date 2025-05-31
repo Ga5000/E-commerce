@@ -23,24 +23,6 @@ ext {
     set('springGrpcVersion', "0.8.0")
 }
 
-protobuf {
-    protoc {
-        artifact = 'com.google.protobuf:protoc'
-    }
-    plugins {
-        grpc {
-            artifact = 'io.grpc:protoc-gen-grpc-java'
-        }
-    }
-    generateProtoTasks {
-        all()*.plugins {
-            grpc {
-                option 'jakarta_omit'
-                option '@generated=omit'
-            }
-        }
-    }
-}
 
 subprojects {
     apply plugin: 'java'
@@ -51,6 +33,22 @@ subprojects {
     repositories {
         mavenCentral()
         maven { url 'https://repo.spring.io/milestone' }
+    }
+
+    protobuf {
+        protoc {
+            artifact = 'com.google.protobuf:protoc:3.25.1'
+        }
+        plugins {
+            grpc {
+                artifact = 'io.grpc:protoc-gen-grpc-java:1.60.0'
+            }
+        }
+        generateProtoTasks {
+            all()*.plugins {
+                grpc {}
+            }
+        }
     }
 
 

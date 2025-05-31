@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/gateway/e-commerce-backend.gateway.main.iml" filepath="$PROJECT_DIR$/.idea/modules/gateway/e-commerce-backend.gateway.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/services/discovery/e-commerce-backend.services.discovery.main.iml" filepath="$PROJECT_DIR$/.idea/modules/services/discovery/e-commerce-backend.services.discovery.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/services/media/e-commerce-backend.services.media.main.iml" filepath="$PROJECT_DIR$/.idea/modules/services/media/e-commerce-backend.services.media.main.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/modules/services/product/e-commerce-backend.services.product.main.iml" filepath="$PROJECT_DIR$/.idea/modules/services/product/e-commerce-backend.services.product.main.iml" />
     </modules>
   </component>

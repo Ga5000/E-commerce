@@ -40,4 +40,14 @@ public class Product {
     @Column(name = "image_url")
     private List<String> imagesUrls = new ArrayList<>();
 
+    public void addCategory(Category category) {
+        categories.add(category);
+        category.addProduct(this);
+    }
+
+    public void removeCategory(Category category) {
+        categories.remove(category);
+        category.removeProduct(this);
+    }
+
 }
