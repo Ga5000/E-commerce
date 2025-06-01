@@ -3,7 +3,7 @@ package com.ga5000.api.product.service.category.impl;
 import com.ga5000.api.product.domain.model.category.Category;
 import com.ga5000.api.product.domain.model.product.Product;
 import com.ga5000.api.product.domain.repository.category.CategoryRepository;
-import com.ga5000.api.product.dto.CategoryRequest;
+import com.ga5000.api.product.dto.request.category.CategoryRequest;
 import com.ga5000.api.product.service.category.CategoryService;
 import jakarta.persistence.EntityExistsException;
 import jakarta.persistence.EntityNotFoundException;

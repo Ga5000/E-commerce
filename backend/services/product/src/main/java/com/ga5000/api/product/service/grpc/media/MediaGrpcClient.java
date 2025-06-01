@@ -1,4 +1,4 @@
-package com.ga5000.api.product.service.grpc;
+package com.ga5000.api.product.service.grpc.media;
 
 import com.ga5000.api.media.MediaServiceGrpc;
 import com.ga5000.api.media.UploadImagesRequest;
@@ -28,5 +28,9 @@ public class MediaGrpcClient {
             );
         }
         return mediaStub.uploadImages(requestBuilder.build());
+    }
+
+    public MediaServiceGrpc.MediaServiceBlockingStub getStub() {
+        return mediaStub;
     }
 }

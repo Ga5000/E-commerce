@@ -2,7 +2,7 @@ package com.ga5000.api.product.service.category;
 
 
 import com.ga5000.api.product.domain.model.product.Product;
-import com.ga5000.api.product.dto.CategoryRequest;
+import com.ga5000.api.product.dto.request.category.CategoryRequest;
 
 import java.util.UUID;
 

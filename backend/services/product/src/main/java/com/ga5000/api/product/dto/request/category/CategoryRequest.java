@@ -1,4 +1,4 @@
-package com.ga5000.api.product.dto;
+package com.ga5000.api.product.dto.request.category;
 
 import jakarta.validation.constraints.NotBlank;
 

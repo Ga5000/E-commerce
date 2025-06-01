@@ -2,6 +2,14 @@ spring:
   application:
     name: media-service
 
+  cloud:
+    # --- Eureka client setup ---
+    eureka:
+      client:
+        service-url:
+          defaultZone: http://localhost:8761/eureka/
+        register-with-eureka: true
+        fetch-registry: true
 
 minio:
   endpoint: http://localhost:9000
